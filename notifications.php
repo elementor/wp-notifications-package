@@ -1,5 +1,6 @@
 <?php
 namespace WPNotificationsPackage;
+
 // Change here the Namespace
 
 if ( ! defined( 'ABSPATH' ) ) {
