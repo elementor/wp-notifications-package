@@ -29,11 +29,12 @@ class Plugin_Example {
 		require __DIR__ . '/notifications.php';
 
 		$this->notifications = new Notifications(
-			'wp_notifications_package',
+			'wp-notifications-package',
 			'1.0.0'
 		);
 
 		add_action( 'admin_notices', [ $this, 'display_notifications' ] );
+		add_action( 'admin_footer', [ $this, 'display_dialog' ] );
 	}
 
 	public function display_notifications() {
@@ -52,6 +53,59 @@ class Plugin_Example {
 				<?php endforeach; ?>
 			</ul>
 		</div>
+		<?php
+
+		// Example with HTML Dialog modal
+		?>
+		<div class="notice notice-info is-dismissible">
+			<button class="plugin-example-notifications-dialog-open">Open Notification</button>
+		</div>
+		<?php
+	}
+
+	public function display_dialog() {
+		$notifications = $this->notifications->get_notifications( true );
+
+		if ( empty( $notifications['notifications'] ) ) {
+			return;
+		}
+
+		?>
+		<style>
+			#plugin-example-notifications-dialog {
+				padding: 20px;
+				border: 1px solid #ccc;
+				box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+			}
+			#plugin-example-notifications-dialog::backdrop {
+				background: rgba(0, 0, 0, 0.5);
+			}
+		</style>
+		<dialog id="plugin-example-notifications-dialog">
+			<h3><?php esc_html_e( 'What\'s new:', 'wp-notifications-package' ); ?></h3>
+			<ul>
+				<?php foreach ( $notifications['notifications'] as $item ) : ?>
+					<li><a href="<?php echo esc_url( $item['link'] ?? '#' ); ?>" target="_blank"><?php echo esc_html( $item['title'] ); ?></a></li>
+				<?php endforeach; ?>
+			</ul>
+			<button class="close">Close</button>
+		</dialog>
+
+		<script>
+			document.addEventListener( 'DOMContentLoaded', function() {
+				const openDialogBtn = document.querySelector( '.plugin-example-notifications-dialog-open' );
+				const closeDialogBtn = document.querySelector( '#plugin-example-notifications-dialog button.close' );
+				const dialog = document.getElementById( 'plugin-example-notifications-dialog' );
+
+				openDialogBtn.addEventListener( 'click', function() {
+					dialog.showModal();
+				} );
+
+				closeDialogBtn.addEventListener( 'click', function() {
+					dialog.close();
+				} );
+			} );
+		</script>
 		<?php
 	}
 }

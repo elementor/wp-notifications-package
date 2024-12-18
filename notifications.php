@@ -17,10 +17,23 @@ class Notifications {
 	private string $api_endpoint = 'https://assets.elementor.com/notifications/v1/notifications.json';
 
 	public function __construct( string $app_name, string $app_version ) {
-		$this->app_name = $app_name;
+		$this->app_name = sanitize_title( $app_name );
 		$this->app_version = $app_version;
 
 		$this->transient_key = "_{$this->app_name}_notifications";
+
+		add_action( 'admin_init', [ $this, 'refresh_notifications' ] );
+		add_filter( 'body_class', [ $this, 'add_body_class' ] );
+	}
+
+	public function refresh_notifications(): void {
+		$this->get_notifications();
+	}
+
+	public function add_body_class( array $classes ): array {
+		$classes[] = 'plugin-' . $this->app_name;
+
+		return $classes;
 	}
 
 	public function get_notifications( $force_update = false ): array {
