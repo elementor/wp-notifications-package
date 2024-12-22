@@ -37,18 +37,124 @@ class Notifications {
 		return $classes;
 	}
 
-	public function get_notifications( $force_update = false ): array {
+	public function get_notifications_by_conditions( $force_request = false ) {
+		$notifications = $this->get_notifications( $force_request );
+
+		$filtered_notifications = [];
+
+		foreach ( $notifications as $notification ) {
+			if ( empty( $notification['conditions'] ) ) {
+				$filtered_notifications = $this->add_to_array( $filtered_notifications, $notification );
+
+				continue;
+			}
+
+			if ( ! $this->check_conditions( $notification['conditions'] ) ) {
+				continue;
+			}
+
+			$filtered_notifications = $this->add_to_array( $filtered_notifications, $notification );
+		}
+
+		return $filtered_notifications;
+	}
+
+	private function get_notifications( $force_update = false ): array {
 		$notifications = get_transient( $this->transient_key );
 
 		if ( false === $notifications || $force_update ) {
-			$notifications = $this->get_data();
+			$notifications = $this->fetch_data();
 			set_transient( $this->transient_key, $notifications, 12 * HOUR_IN_SECONDS );
 		}
 
 		return $notifications;
 	}
 
-	private function get_data(): array {
+	private function add_to_array( $filtered_notifications, $notification ) {
+		foreach ( $filtered_notifications as $filtered_notification ) {
+			if ( $filtered_notification['id'] === $notification['id'] ) {
+				return $filtered_notifications;
+			}
+		}
+
+		$filtered_notifications[] = $notification;
+
+		return $filtered_notifications;
+	}
+
+	private function check_conditions( $groups ): bool {
+		foreach ( $groups as $group ) {
+			if ( $this->check_group( $group ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private function check_group( $group ) {
+		$is_or_relation = ! empty( $group['relation'] ) && 'OR' === $group['relation'];
+		unset( $group['relation'] );
+		$result = false;
+
+		foreach ( $group as $condition ) {
+			// Reset results for each condition.
+			$result = false;
+			switch ( $condition['type'] ) {
+				case 'wordpress': // phpcs:ignore WordPress.WP.CapitalPDangit.Misspelled
+					// include an unmodified $wp_version
+					include ABSPATH . WPINC . '/version.php';
+					$result = version_compare( $wp_version, $condition['version'], $condition['operator'] );
+					break;
+				case 'multisite':
+					$result = is_multisite() === $condition['multisite'];
+					break;
+				case 'language':
+					$in_array = in_array( get_locale(), $condition['languages'], true );
+					$result = 'in' === $condition['operator'] ? $in_array : ! $in_array;
+					break;
+				case 'plugin':
+					if ( ! function_exists( 'is_plugin_active' ) ) {
+						require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+					}
+
+					$is_plugin_active = is_plugin_active( $condition['plugin'] );
+
+					if ( empty( $condition['operator'] ) ) {
+						$condition['operator'] = '==';
+					}
+
+					$result = '==' === $condition['operator'] ? $is_plugin_active : ! $is_plugin_active;
+					break;
+				case 'theme':
+					$theme = wp_get_theme();
+					if ( wp_get_theme()->parent() ) {
+						$theme = wp_get_theme()->parent();
+					}
+
+					if ( $theme->get_template() === $condition['theme'] ) {
+						$version = $theme->version;
+					} else {
+						$version = '';
+					}
+
+					$result = version_compare( $version, $condition['version'], $condition['operator'] );
+					break;
+
+				default:
+					$result = apply_filters( "$this->app_name/notifications/condition/{$condition['type']}", $result, $condition );
+					break;
+			}
+
+			if ( ( $is_or_relation && $result ) || ( ! $is_or_relation && ! $result ) ) {
+				return $result;
+			}
+		}
+
+		return $result;
+	}
+
+	private function fetch_data(): array {
 		$response = wp_remote_get(
 			$this->api_endpoint,
 			[
@@ -66,10 +172,10 @@ class Notifications {
 
 		$data = \json_decode( wp_remote_retrieve_body( $response ), true );
 
-		if ( empty( $data ) || ! is_array( $data ) ) {
+		if ( empty( $data['notifications'] ) || ! is_array( $data['notifications'] ) ) {
 			return [];
 		}
 
-		return $data;
+		return $data['notifications'];
 	}
 }

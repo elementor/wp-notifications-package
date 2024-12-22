@@ -38,9 +38,9 @@ class Plugin_Example {
 	}
 
 	public function display_notifications() {
-		$notifications = $this->notifications->get_notifications( true );
+		$notifications = $this->notifications->get_notifications_by_conditions( true );
 
-		if ( empty( $notifications['notifications'] ) ) {
+		if ( empty( $notifications ) ) {
 			return;
 		}
 
@@ -48,7 +48,7 @@ class Plugin_Example {
 		<div class="notice notice-info is-dismissible">
 			<h3><?php esc_html_e( 'What\'s new:', 'wp-notifications-package' ); ?></h3>
 			<ul>
-				<?php foreach ( $notifications['notifications'] as $item ) : ?>
+				<?php foreach ( $notifications as $item ) : ?>
 					<li><a href="<?php echo esc_url( $item['link'] ?? '#' ); ?>" target="_blank"><?php echo esc_html( $item['title'] ); ?></a></li>
 				<?php endforeach; ?>
 			</ul>
@@ -64,9 +64,9 @@ class Plugin_Example {
 	}
 
 	public function display_dialog() {
-		$notifications = $this->notifications->get_notifications( true );
+		$notifications = $this->notifications->get_notifications_by_conditions( true );
 
-		if ( empty( $notifications['notifications'] ) ) {
+		if ( empty( $notifications ) ) {
 			return;
 		}
 
@@ -84,7 +84,7 @@ class Plugin_Example {
 		<dialog id="plugin-example-notifications-dialog">
 			<h3><?php esc_html_e( 'What\'s new:', 'wp-notifications-package' ); ?></h3>
 			<ul>
-				<?php foreach ( $notifications['notifications'] as $item ) : ?>
+				<?php foreach ( $notifications as $item ) : ?>
 					<li><a href="<?php echo esc_url( $item['link'] ?? '#' ); ?>" target="_blank"><?php echo esc_html( $item['title'] ); ?></a></li>
 				<?php endforeach; ?>
 			</ul>
