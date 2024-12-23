@@ -160,6 +160,7 @@ class Notifications {
 			[
 				'timeout' => 10,
 				'body' => [
+					'app_name' => $this->app_name,
 					'app_version' => $this->app_version,
 					'site_lang' => get_bloginfo( 'language' ),
 				],
