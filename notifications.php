@@ -115,7 +115,7 @@ class Notifications {
 					break;
 				case 'plugin':
 					if ( ! function_exists( 'is_plugin_active' ) ) {
-						require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+						require_once ABSPATH . 'wp-admin/includes/plugin.php';
 					}
 
 					$is_plugin_active = is_plugin_active( $condition['plugin'] );
