@@ -101,7 +101,7 @@ class Notifications {
 			// Reset results for each condition.
 			$result = false;
 			switch ( $condition['type'] ) {
-				case 'wordpress':
+				case 'wordpress': // phpcs:ignore WordPress.WP.CapitalPDangit.Misspelled
 					// include an unmodified $wp_version
 					include ABSPATH . WPINC . '/version.php';
 					$result = version_compare( $wp_version, $condition['version'], $condition['operator'] );
