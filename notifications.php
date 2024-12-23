@@ -1,6 +1,6 @@
 <?php
-namespace WPNotificationsPackage;
 // Change here the Namespace
+namespace WPNotificationsPackage;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -189,7 +189,7 @@ class Notifications {
 			return false;
 		}
 
-		if ( current_time( 'timestamp' ) > $cache['timeout'] ) {
+		if ( time() > $cache['timeout'] ) {
 			return false;
 		}
 
@@ -198,8 +198,8 @@ class Notifications {
 
 	private static function set_transient( $cache_key, $value, $expiration = '+12 hours' ) {
 		$data = [
-			'timeout' => strtotime( $expiration, current_time( 'timestamp' ) ),
-			'value' => json_encode( $value ),
+			'timeout' => strtotime( $expiration, time() ),
+			'value' => wp_json_encode( $value ),
 		];
 
 		return update_option( $cache_key, $data, false );
