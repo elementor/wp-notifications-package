@@ -1,6 +1,5 @@
 <?php
 namespace WPNotificationsPackage;
-
 // Change here the Namespace
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -13,13 +12,16 @@ class Notifications {
 
 	private string $app_version;
 
+	private string $app_type;
+
 	private string $transient_key;
 
 	private string $api_endpoint = 'https://assets.elementor.com/notifications/v1/notifications.json';
 
-	public function __construct( string $app_name, string $app_version ) {
+	public function __construct( string $app_name, string $app_version, string $app_type = 'plugin' ) {
 		$this->app_name = sanitize_title( $app_name );
 		$this->app_version = $app_version;
+		$this->app_type = $app_type;
 
 		$this->transient_key = "_{$this->app_name}_notifications";
 
@@ -32,7 +34,7 @@ class Notifications {
 	}
 
 	public function add_body_class( array $classes ): array {
-		$classes[] = 'plugin-' . $this->app_name;
+		$classes[] = $this->app_type . '-' . $this->app_name;
 
 		return $classes;
 	}
@@ -60,11 +62,11 @@ class Notifications {
 	}
 
 	private function get_notifications( $force_update = false ): array {
-		$notifications = get_transient( $this->transient_key );
+		$notifications = static::get_transient( $this->transient_key );
 
 		if ( false === $notifications || $force_update ) {
 			$notifications = $this->fetch_data();
-			set_transient( $this->transient_key, $notifications, 12 * HOUR_IN_SECONDS );
+			static::set_transient( $this->transient_key, $notifications );
 		}
 
 		return $notifications;
@@ -178,5 +180,28 @@ class Notifications {
 		}
 
 		return $data['notifications'];
+	}
+
+	private static function get_transient( $cache_key ) {
+		$cache = get_option( $cache_key );
+
+		if ( empty( $cache['timeout'] ) ) {
+			return false;
+		}
+
+		if ( current_time( 'timestamp' ) > $cache['timeout'] ) {
+			return false;
+		}
+
+		return json_decode( $cache['value'], true );
+	}
+
+	private static function set_transient( $cache_key, $value, $expiration = '+12 hours' ) {
+		$data = [
+			'timeout' => strtotime( $expiration, current_time( 'timestamp' ) ),
+			'value' => json_encode( $value ),
+		];
+
+		return update_option( $cache_key, $data, false );
 	}
 }
