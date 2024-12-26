@@ -1,6 +1,5 @@
 <?php
-// Change here the Namespace
-namespace WPNotificationsPackage;
+namespace Elementor\WPNotificationsPackage\V100;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -8,20 +7,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Notifications {
 
+	const PACKAGE_VERSION = '1.0.0';
+
 	private string $app_name;
 
 	private string $app_version;
 
-	private string $app_type;
+	private string $short_app_name;
 
 	private string $transient_key;
 
-	private string $api_endpoint = 'https://assets.elementor.com/notifications/v1/notifications.json';
+	private string $api_endpoint = 'https://assets.stg.elementor.red/%s/v1/notifications.json';
 
-	public function __construct( string $app_name, string $app_version, string $app_type = 'plugin' ) {
+	public function __construct( string $app_name, string $app_version, string $short_app_name = 'plugin' ) {
 		$this->app_name = sanitize_title( $app_name );
 		$this->app_version = $app_version;
-		$this->app_type = $app_type;
+		$this->short_app_name = $short_app_name;
+
+		$this->api_endpoint = sprintf( $this->api_endpoint, $this->app_name );
 
 		$this->transient_key = "_{$this->app_name}_notifications";
 
@@ -34,7 +37,7 @@ class Notifications {
 	}
 
 	public function add_body_class( array $classes ): array {
-		$classes[] = $this->app_type . '-' . $this->app_name;
+		$classes[] = $this->short_app_name . '-default';
 
 		return $classes;
 	}
@@ -162,9 +165,11 @@ class Notifications {
 			[
 				'timeout' => 10,
 				'body' => [
+					'api_version' => self::PACKAGE_VERSION,
 					'app_name' => $this->app_name,
 					'app_version' => $this->app_version,
 					'site_lang' => get_bloginfo( 'language' ),
+					'site_key' => $this->get_site_key(),
 				],
 			]
 		);
@@ -180,6 +185,17 @@ class Notifications {
 		}
 
 		return $data['notifications'];
+	}
+
+	private function get_site_key() {
+		$site_key = get_option( 'elementor_connect_site_key' );
+
+		if ( ! $site_key ) {
+			$site_key = md5( uniqid( wp_generate_password() ) );
+			update_option( 'elementor_connect_site_key', $site_key );
+		}
+
+		return $site_key;
 	}
 
 	private static function get_transient( $cache_key ) {

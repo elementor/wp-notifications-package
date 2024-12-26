@@ -11,7 +11,7 @@
  * Text Domain: wp-notifications-package
  */
 
-use WPNotificationsPackage\Notifications;
+use Elementor\WPNotificationsPackage\V100\Notifications;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -26,11 +26,12 @@ class Plugin_Example {
 	}
 
 	private function init() {
-		require __DIR__ . '/notifications.php';
+		require __DIR__ . '/vendor/autoload.php';
 
 		$this->notifications = new Notifications(
 			'wp-notifications-package',
-			'1.0.0'
+			'1.0.0',
+			'wppe'
 		);
 
 		add_action( 'admin_notices', [ $this, 'display_notifications' ] );
