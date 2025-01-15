@@ -17,14 +17,12 @@ class Notifications {
 
 	private string $transient_key;
 
-	private string $api_endpoint = 'https://assets.stg.elementor.red/%s/v1/notifications.json';
+	private string $api_endpoint = 'https://my.elementor.com/api/v1/notifications';
 
 	public function __construct( string $app_name, string $app_version, string $short_app_name = 'plugin' ) {
 		$this->app_name = sanitize_title( $app_name );
 		$this->app_version = $app_version;
 		$this->short_app_name = $short_app_name;
-
-		$this->api_endpoint = sprintf( $this->api_endpoint, $this->app_name );
 
 		$this->transient_key = "_{$this->app_name}_notifications";
 
