@@ -7,8 +7,74 @@ on:
 jobs:
   release:
     if: github.event.pull_request.merged == true && github.base_ref == 'main' && !contains(github.event.pull_request.labels.*.name, 'skip release')
-    uses: elementor/elementor-cloud-github-actions/.github/workflows/bump-release.yaml@fix/add-json-file-update
-    with:
-      CUSTOM_JSON_FILE: composer.json
-      CUSTOM_FIELD: version  
-    secrets: inherit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    env:
+      PR_TITLE: ${{ github.event.pull_request.title }}
+      PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.CLOUD_DEVOPS_TOKEN }}
+          
+      - name: Determine version bump level based on labels
+        if: ${{ env.PR_TITLE != null }}
+        run: |
+          LABELS="${{ env.PR_LABELS }}"
+          if [[ "$LABELS" == *"major"* ]]; then
+            echo "LEVEL=major" >> $GITHUB_ENV
+          elif [[ "$LABELS" == *"minor"* ]]; then
+            echo "LEVEL=minor" >> $GITHUB_ENV
+          else
+            echo "LEVEL=patch" >> $GITHUB_ENV
+          fi
+
+      - name: Get Latest Tag 
+        run: echo "LATEST_TAG=$(git tag '--sort=authordate' | tail -1)" >> $GITHUB_ENV
+
+      - uses: actions-ecosystem/action-bump-semver@v1
+        id: version
+        with:
+          current_version: ${{ steps.previous-tag-no-prefix.outputs.VERSION_WITHOUT_PREFIX }}
+          level: ${{ env.LEVEL }}
+          
+      - name: Update Custom JSON Version file
+        run: |
+          CUSTOM_FILE="composer.json"
+          VERSION_FIELD="version"
+          NEW_VERSION="${{ steps.version.outputs.new_version }}"
+
+          # Update the specific field in the JSON file
+          jq ".${VERSION_FIELD} = \"${NEW_VERSION}\"" "$CUSTOM_FILE" > "${CUSTOM_FILE}.tmp" && mv "${CUSTOM_FILE}.tmp" "$CUSTOM_FILE"
+
+          echo "Updated file content:"
+          cat "$CUSTOM_FILE"
+
+          git -c "user.name=Bot" -c "user.email=bot@cloud-gitops" commit --allow-empty -am "Bump $CUSTOM_FILE ${VERSION_FIELD} to ${NEW_VERSION}"
+          git push
+          echo "LAST_SHA=`git rev-parse HEAD`" >> $GITHUB_ENV
+
+      - name: Changelog
+        uses: mikepenz/release-changelog-builder-action@v4.2.0
+        id: Changelog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          toTag: "${{ github.ref }}"
+          
+      - name: Create Release with gh-release
+        uses: ncipollo/release-action@v1
+        with:
+          token: ${{ secrets.CLOUD_DEVOPS_TOKEN }}
+          tag: ${{ steps.version.outputs.new_version }}
+          name: "${{ steps.version.outputs.new_version }}: ${{ env.PR_TITLE }}"
+          body: |
+            By: ${{ github.actor }}
+            Changelog:
+            ${{ steps.Changelog.outputs.changelog }}
+          commit: ${{ env.LAST_SHA }}
+
