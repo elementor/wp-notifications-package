@@ -1,19 +1,24 @@
 name: Release
 
 on:
-  pull_request:
-    types: [closed]
-
+  workflow_dispatch:
+    inputs:
+      LEVEL:
+        description: ''
+        type: level
+        required: true
+        default: patch
+        options: 
+        - patch
+        - minor
+        - major
 jobs:
   release:
-    if: github.event.pull_request.merged == true && github.base_ref == 'main' && !contains(github.event.pull_request.labels.*.name, 'skip release')
+    if: github.base_ref == 'main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: read
-    env:
-      PR_TITLE: ${{ github.event.pull_request.title }}
-      PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
 
     steps:
       - name: Checkout code
@@ -22,31 +27,13 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
           
-      - name: Determine version bump level based on labels
-        if: ${{ env.PR_TITLE != null }}
-        run: |
-          LABELS="${{ env.PR_LABELS }}"
-          if [[ "$LABELS" == *"major"* ]]; then
-            echo "LEVEL=major" >> $GITHUB_ENV
-          elif [[ "$LABELS" == *"minor"* ]]; then
-            echo "LEVEL=minor" >> $GITHUB_ENV
-          else
-            echo "LEVEL=patch" >> $GITHUB_ENV
-          fi
-
       - name: Get Latest Tag 
-        run: echo "LATEST_TAG=$(git tag '--sort=authordate' | tail -1)" >> $GITHUB_ENV
-
-      - name: Remove prefix from previoustag
-        id: previous-tag
-        run: |
-          VERSION=$(echo "${{ env.LATEST_TAG }}" | sed "s#^${{ env.SERVICE_PREFIX }}##")
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        run: echo "VERSION=$(git tag '--sort=authordate' | tail -1)" >> $GITHUB_ENV
 
       - uses: actions-ecosystem/action-bump-semver@v1
         id: version
         with:
-          current_version: ${{ steps.previous-tag.outputs.VERSION }}
+          current_version: ${{ env.VERSION }}
           level: ${{ env.LEVEL }}
           
       - name: Update Custom JSON Version file
@@ -77,7 +64,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.version.outputs.new_version }}
-          name: "${{ steps.version.outputs.new_version }}: ${{ env.PR_TITLE }}"
+          name: "${{ steps.version.outputs.new_version }}"
           body: |
             By: ${{ github.actor }} 
             Changelog:
