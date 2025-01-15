@@ -8,4 +8,7 @@ jobs:
   release:
     if: github.event.pull_request.merged == true && github.base_ref == 'main' && !contains(github.event.pull_request.labels.*.name, 'skip release')
     uses: elementor/elementor-cloud-github-actions/.github/workflows/bump-release.yaml@fix/add-json-file-update
+    with:
+      CUSTOM_JSON_FILE: composer.json
+      CUSTOM_FIELD: version  
     secrets: inherit
