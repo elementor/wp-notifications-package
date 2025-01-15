@@ -14,7 +14,7 @@ on:
         - major
 jobs:
   release:
-    if: github.base_ref == 'main'
+    if: github.ref == 'main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
