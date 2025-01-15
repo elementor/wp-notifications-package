@@ -5,7 +5,7 @@ on:
     inputs:
       LEVEL:
         description: ''
-        type: level
+        type: choice
         required: true
         default: patch
         options: 
