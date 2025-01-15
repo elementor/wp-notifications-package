@@ -73,7 +73,7 @@ jobs:
           tag: ${{ steps.version.outputs.new_version }}
           name: "${{ steps.version.outputs.new_version }}: ${{ env.PR_TITLE }}"
           body: |
-            By: ${{ github.actor }}
+            By: ${{ github.actor }} 
             Changelog:
             ${{ steps.Changelog.outputs.changelog }}
           commit: ${{ env.LAST_SHA }}
