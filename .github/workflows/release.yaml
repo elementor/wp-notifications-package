@@ -37,10 +37,16 @@ jobs:
       - name: Get Latest Tag 
         run: echo "LATEST_TAG=$(git tag '--sort=authordate' | tail -1)" >> $GITHUB_ENV
 
+      - name: Remove prefix from previoustag
+        id: previous-tag
+        run: |
+          VERSION=$(echo "${{ env.LATEST_TAG }}" | sed "s#^${{ env.SERVICE_PREFIX }}##")
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
       - uses: actions-ecosystem/action-bump-semver@v1
         id: version
         with:
-          current_version: ${{ steps.previous-tag-no-prefix.outputs.VERSION_WITHOUT_PREFIX }}
+          current_version: ${{ steps.previous-tag.outputs.VERSION }}
           level: ${{ env.LEVEL }}
           
       - name: Update Custom JSON Version file
