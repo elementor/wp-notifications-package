@@ -34,7 +34,7 @@ jobs:
         id: version
         with:
           current_version: ${{ env.VERSION }}
-          level: ${{ env.LEVEL }}
+          level: ${{ github.event.inputs.LEVEL }}
           
       - name: Update Custom JSON Version file
         run: |
