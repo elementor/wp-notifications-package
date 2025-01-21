@@ -1,5 +1,5 @@
 <?php
-namespace Elementor\WPNotificationsPackage\V100;
+namespace Elementor\WPNotificationsPackage\V110;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Notifications {
 
-	const PACKAGE_VERSION = '1.0.0';
+	const PACKAGE_VERSION = '1.1.0';
 
 	private string $app_name;
 
