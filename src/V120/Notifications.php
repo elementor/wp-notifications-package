@@ -17,9 +17,7 @@ class Notifications {
 
 	private string $transient_key;
 
-	private array $plugin_data = [];
-
-	private array $theme_data = [];
+	private array $app_data = [];
 
 	private string $api_endpoint = 'https://my.elementor.com/api/v1/notifications';
 
@@ -28,19 +26,19 @@ class Notifications {
 		$this->app_version = $config['app_version'];
 		$this->short_app_name = $config['short_app_name'] ?? 'plugin';
 
-		$this->plugin_data = $config['plugin_data'] ?? [];
-		$this->theme_data = $config['theme_data'] ?? [];
+		$this->app_data = $config['app_data'] ?? [];
+		$this->app_data['type'] = $config['app_data']['type'] ?? '';
 
 		$this->transient_key = "_{$this->app_name}_notifications";
 
 		add_action( 'admin_init', [ $this, 'refresh_notifications' ] );
 		add_filter( 'body_class', [ $this, 'add_body_class' ] );
 
-		if ( ! empty( $this->plugin_data['plugin_basename'] ) ) {
-			register_deactivation_hook( $this->plugin_data['plugin_basename'], [ $this, 'on_plugin_deactivated' ] );
+		if ( 'plugin' === $this->app_data['type'] && ! empty( $this->app_data['plugin_basename'] ) ) {
+			register_deactivation_hook( $this->app_data['plugin_basename'], [ $this, 'on_plugin_deactivated' ] );
 		}
 
-		if ( ! empty( $this->theme_data['theme_name'] ) ) {
+		if ( 'theme' === $this->app_data['type'] && ! empty( $this->app_data['theme_name'] ) ) {
 			add_action( 'switch_theme', [ $this, 'on_theme_deactivated' ], 10, 3 );
 		}
 	}
@@ -248,7 +246,7 @@ class Notifications {
 	}
 
 	public function on_theme_deactivated( string $new_name, \WP_Theme $new_theme, \WP_Theme $old_theme ): void {
-		if ( $old_theme->get_template() === $this->theme_data['theme_name'] ) {
+		if ( $old_theme->get_template() === $this->app_data['theme_name'] ) {
 			$this->get_notifications( true, 'deactivated' );
 		}
 	}
