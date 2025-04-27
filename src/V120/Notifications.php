@@ -1,5 +1,5 @@
 <?php
-namespace Elementor\WPNotificationsPackage\V110;
+namespace Elementor\WPNotificationsPackage\V120;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Notifications {
 
-	const PACKAGE_VERSION = '1.1.0';
+	const PACKAGE_VERSION = '1.2.0';
 
 	private string $app_name;
 
@@ -17,17 +17,32 @@ class Notifications {
 
 	private string $transient_key;
 
+	private array $plugin_data = [];
+
+	private array $theme_data = [];
+
 	private string $api_endpoint = 'https://my.elementor.com/api/v1/notifications';
 
-	public function __construct( string $app_name, string $app_version, string $short_app_name = 'plugin' ) {
-		$this->app_name = sanitize_title( $app_name );
-		$this->app_version = $app_version;
-		$this->short_app_name = $short_app_name;
+	public function __construct( array $config ) {
+		$this->app_name = sanitize_title( $config['app_name'] );
+		$this->app_version = $config['app_version'];
+		$this->short_app_name = $config['short_app_name'] ?? 'plugin';
+
+		$this->plugin_data = $config['plugin_data'] ?? [];
+		$this->theme_data = $config['theme_data'] ?? [];
 
 		$this->transient_key = "_{$this->app_name}_notifications";
 
 		add_action( 'admin_init', [ $this, 'refresh_notifications' ] );
 		add_filter( 'body_class', [ $this, 'add_body_class' ] );
+
+		if ( ! empty( $this->plugin_data['plugin_basename'] ) ) {
+			register_deactivation_hook( $this->plugin_data['plugin_basename'], [ $this, 'on_plugin_deactivated' ] );
+		}
+
+		if ( ! empty( $this->theme_data['theme_name'] ) ) {
+			add_action( 'switch_theme', [ $this, 'on_theme_deactivated' ], 10, 3 );
+		}
 	}
 
 	public function refresh_notifications(): void {
@@ -62,11 +77,11 @@ class Notifications {
 		return $filtered_notifications;
 	}
 
-	private function get_notifications( $force_update = false ): array {
+	private function get_notifications( $force_update = false, $additional_status = false ): array {
 		$notifications = static::get_transient( $this->transient_key );
 
 		if ( false === $notifications || $force_update ) {
-			$notifications = $this->fetch_data();
+			$notifications = $this->fetch_data( $additional_status );
 			static::set_transient( $this->transient_key, $notifications );
 		}
 
@@ -157,18 +172,27 @@ class Notifications {
 		return $result;
 	}
 
-	private function fetch_data(): array {
+	private function fetch_data( $additional_status = false ): array {
+		$body_request = [
+			'api_version' => self::PACKAGE_VERSION,
+			'app_name' => $this->app_name,
+			'app_version' => $this->app_version,
+			'site_lang' => get_bloginfo( 'language' ),
+			'site_key' => $this->get_site_key(),
+		];
+
+		$timeout = 10;
+
+		if ( ! empty( $additional_status ) ) {
+			$body_request['status'] = $additional_status;
+			$timeout = 3;
+		}
+
 		$response = wp_remote_get(
 			$this->api_endpoint,
 			[
-				'timeout' => 10,
-				'body' => [
-					'api_version' => self::PACKAGE_VERSION,
-					'app_name' => $this->app_name,
-					'app_version' => $this->app_version,
-					'site_lang' => get_bloginfo( 'language' ),
-					'site_key' => $this->get_site_key(),
-				],
+				'timeout' => $timeout,
+				'body' => $body_request,
 			]
 		);
 
@@ -217,5 +241,15 @@ class Notifications {
 		];
 
 		return update_option( $cache_key, $data, false );
+	}
+
+	public function on_plugin_deactivated(): void {
+		$this->get_notifications( true, 'deactivated' );
+	}
+
+	public function on_theme_deactivated( string $new_name, \WP_Theme $new_theme, \WP_Theme $old_theme ): void {
+		if ( $old_theme->get_template() === $this->theme_data['theme_name'] ) {
+			$this->get_notifications( true, 'deactivated' );
+		}
 	}
 }
