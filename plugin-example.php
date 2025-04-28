@@ -33,7 +33,6 @@ class Plugin_Example {
 			'app_version' => '1.2.0',
 			'short_app_name' => 'wppe',
 			'app_data' => [
-				'type' => 'plugin',
 				'plugin_basename' => plugin_basename( __FILE__ ),
 			],
 		] );

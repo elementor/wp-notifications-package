@@ -27,18 +27,17 @@ class Notifications {
 		$this->short_app_name = $config['short_app_name'] ?? 'plugin';
 
 		$this->app_data = $config['app_data'] ?? [];
-		$this->app_data['type'] = $config['app_data']['type'] ?? '';
 
 		$this->transient_key = "_{$this->app_name}_notifications";
 
 		add_action( 'admin_init', [ $this, 'refresh_notifications' ] );
 		add_filter( 'body_class', [ $this, 'add_body_class' ] );
 
-		if ( 'plugin' === $this->app_data['type'] && ! empty( $this->app_data['plugin_basename'] ) ) {
+		if ( ! empty( $this->app_data['plugin_basename'] ) ) {
 			register_deactivation_hook( $this->app_data['plugin_basename'], [ $this, 'on_plugin_deactivated' ] );
 		}
 
-		if ( 'theme' === $this->app_data['type'] && ! empty( $this->app_data['theme_name'] ) ) {
+		if ( ! empty( $this->app_data['theme_name'] ) ) {
 			add_action( 'switch_theme', [ $this, 'on_theme_deactivated' ], 10, 3 );
 		}
 	}
