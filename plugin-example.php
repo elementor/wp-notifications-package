@@ -11,7 +11,7 @@
  * Text Domain: wp-notifications-package
  */
 
-use Elementor\WPNotificationsPackage\V100\Notifications;
+use Elementor\WPNotificationsPackage\V120\Notifications;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -28,18 +28,21 @@ class Plugin_Example {
 	private function init() {
 		require __DIR__ . '/vendor/autoload.php';
 
-		$this->notifications = new Notifications(
-			'wp-notifications-package',
-			'1.0.0',
-			'wppe'
-		);
+		$this->notifications = new Notifications( [
+			'app_name' => 'wp-notifications-package',
+			'app_version' => '1.2.0',
+			'short_app_name' => 'wppe',
+			'app_data' => [
+				'plugin_basename' => plugin_basename( __FILE__ ),
+			],
+		] );
 
 		add_action( 'admin_notices', [ $this, 'display_notifications' ] );
 		add_action( 'admin_footer', [ $this, 'display_dialog' ] );
 	}
 
 	public function display_notifications() {
-		$notifications = $this->notifications->get_notifications_by_conditions( true );
+		$notifications = $this->notifications->get_notifications_by_conditions();
 
 		if ( empty( $notifications ) ) {
 			return;
@@ -65,7 +68,7 @@ class Plugin_Example {
 	}
 
 	public function display_dialog() {
-		$notifications = $this->notifications->get_notifications_by_conditions( true );
+		$notifications = $this->notifications->get_notifications_by_conditions();
 
 		if ( empty( $notifications ) ) {
 			return;
